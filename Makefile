@@ -157,11 +157,19 @@ go-examples: ## Run all Go bindings examples
 
 .PHONY: go-examples-format-check
 go-examples-format-check: ## Check format of all Go bindings examples
+ifeq ($(OS),Windows_NT)
+	@powershell -NoProfile -Command "$$files = Get-ChildItem -Path 'bindings/go/examples' -Recurse -Filter '*.go' | ForEach-Object { $$_.FullName }; if (-not $$files) { exit 0 }; $$bad = & gofmt -l $$files; if ($$bad) { $$bad | ForEach-Object { Write-Output $$_ }; exit 1 }"
+else
 	@test -z "$$(find bindings/go/examples -name "*.go" -exec gofmt -l {} \;)"
+endif
 
 .PHONY: go-examples-format
 go-examples-format: ## Format all Go bindings examples
+ifeq ($(OS),Windows_NT)
+	@powershell -NoProfile -Command "$$files = Get-ChildItem -Path 'bindings/go/examples' -Recurse -Filter '*.go' | ForEach-Object { $$_.FullName }; if ($$files) { & gofmt -w $$files }"
+else
 	@find bindings/go/examples -name "*.go" -exec gofmt -w {} \;
+endif
 
 .PHONY: kotlin-example
 kotlin-example: ## Run a specific Kotlin example. Usage: make kotlin-example example
