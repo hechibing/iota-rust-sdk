@@ -13,21 +13,32 @@ import (
 
 const packageAddressHex = "0x3ec4826f1d6e0d9f00680b2e9a7a41f03788ee610b3d11c24f41ab0ae71da39f"
 
+func hasFfiError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if sdkErr, ok := err.(*iota_sdk.SdkFfiError); ok {
+		return sdkErr != nil
+	}
+	return true
+}
+
 func main() {
 	client := iota_sdk.GraphQlClientNewDevnet()
 
 	packageAddress, err := iota_sdk.AddressFromHex(packageAddressHex)
-	if err.(*iota_sdk.SdkFfiError) != nil {
+	if hasFfiError(err) {
 		log.Fatalf("Failed to parse package address: %v", err)
 	}
 
-	pkg, err := client.Package(packageAddress, nil)
-	if err.(*iota_sdk.SdkFfiError) != nil {
+	packageOpt, err := client.Package(packageAddress, nil)
+	if hasFfiError(err) {
 		log.Fatalf("Failed to fetch package: %v", err)
 	}
-	if pkg == nil {
+	if packageOpt == nil {
 		log.Fatalf("Missing package: %s", packageAddressHex)
 	}
+	pkg := *packageOpt
 
 	packageID := pkg.Id().ToHex()
 	packageVersion := pkg.Version()
@@ -36,7 +47,7 @@ func main() {
 	fmt.Printf("Current version: %d\n\n", packageVersion)
 
 	versionsPage, err := client.PackageVersions(packageAddress, nil, nil, nil)
-	if err.(*iota_sdk.SdkFfiError) != nil {
+	if hasFfiError(err) {
 		log.Fatalf("Failed to fetch package versions: %v", err)
 	}
 
@@ -87,7 +98,7 @@ func main() {
 			nil,
 			nil,
 		)
-		if err.(*iota_sdk.SdkFfiError) != nil {
+		if hasFfiError(err) {
 			log.Fatalf("Failed to fetch module %s: %v", moduleName, err)
 		}
 
@@ -117,7 +128,7 @@ func main() {
 					&iota_sdk.ObjectFilter{TypeTag: &typeTag},
 					&iota_sdk.PaginationFilter{Direction: iota_sdk.DirectionForward, Limit: &one},
 				)
-				if err.(*iota_sdk.SdkFfiError) != nil {
+				if hasFfiError(err) {
 					log.Fatalf("Failed to query objects for type %s: %v", typeTag, err)
 				}
 				if len(objectPage.Data) > 0 {
